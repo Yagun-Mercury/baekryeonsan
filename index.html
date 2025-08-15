@@ -1,93 +1,532 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>백련산 역할 분배기</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>백련산 역할 배정기</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+    .page { display: none; }
+    .active { display: block; }
+    .character-button {
+      display: inline-block; margin: 5px; padding: 10px 15px;
+      border: 1px solid #ccc; border-radius: 5px;
+      background-color: white; cursor: pointer;
+    }
+    .character-button.selected { background-color: #007bff; color: white; }
+    .tabs { margin-bottom: 10px; }
+    .tab {
+      display: inline-block; padding: 10px 20px; border: 1px solid #ccc;
+      cursor: pointer; background-color: white;
+    }
+    .tab.active { background-color: #007bff; color: white; }
+    .circle-container {
+      position: relative; width: 900px; height: 900px; margin: 0 auto;
+    }
+    .circle-item {
+      position: absolute; width: 100px; height: 100px; line-height: 1.2em; text-align: center;
+      border-radius: 8px; background-color: white; color: black; cursor: pointer;
+      padding: 10px; box-sizing: border-box; border: 1px solid #ccc; white-space: pre-line;
+      user-select: none;
+    }
+    .student { background-color: #fffacd !important; }
+    .threat { background-color: #98fb98 !important; }
+    .council { background-color: #e6e6fa !important; }
+    .role-input-container {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 5px;
+    }
+    .circle-item.threat-border { border: 3px solid red !important; }
+    .circle-item.council-border { border: 3px solid purple !important; }
+    .circle-item.fool-border { box-shadow: 0 0 0 4px yellow inset !important; }
+    .circle-item.antibody-face { background-color: #8ecaff !important; }
+    .circle-item.infected-face { background-color: #90ee90 !important; }
+    .circle-item.stun-x { position: relative; }
+    .circle-item.stun-x::after {
+      content: ""; position: absolute; left: 10px; top: 10px; width: 80px; height: 80px;
+      border: 8px solid #e00; border-radius: 50%;
+      background: repeating-linear-gradient(45deg,#fff0,#fff0 10px,#e00 10px,#e00 20px);
+      mix-blend-mode: multiply; pointer-events:none; display: block;
+    }
+    .circle-item.protect-shield::before {
+      content: "🛡"; position: absolute; left: 8px; top: 8px; font-size: 2.5em; z-index: 2; pointer-events: none;
+    }
+    .circle-item.interfere-bg {
+      background: repeating-linear-gradient(
+        135deg, #fff, #fff 10px, orange 10px, orange 16px
+      ) !important;
+    }
+    .circle-item .infect-label {
+      display: block; font-size: 1.1em; color: #008800; font-weight: bold; margin-top: 6px;
+    }
+  </style>
 </head>
 <body>
-  <h2>🎲 백련산 역할 분배기</h2>
+  <div id="page1" class="page active">
+    <h2>등장인물 선택</h2>
+    <div id="character-selection"></div>
+    <button onclick="selectAllCharacters()">전체 선택</button>
+    <button onclick="goToNextPage()">다음</button>
+  </div>
+  <div id="page2" class="page">
+    <h2>소속 인원 수 체크</h2>
+    <div class="role-input-container">
+      <label>학생회: <input type="number" id="student-count" value="" /></label>
+      <label>위협: <input type="number" id="threat-count" value="" /></label>
+      <label>이사회: <input type="number" id="council-count" value="" /></label>
+      <label>항체보유자: <input type="number" id="antibody-count" value="" /></label>
+      <label>바보귀신: <input type="number" id="fool-count" value="" /></label>
+    </div>
+    <button onclick="assignRoles()">역할 배정</button>
+    <button onclick="goToPrevPage1()">이전</button>
+  </div>
+  <div id="seating-page" class="page">
+    <h2>자리 배치</h2>
+    <div class="circle-container" id="circle-container-seating"></div>
+    <button onclick="goToPrevPage2()">이전</button>
+    <button onclick="startGame()">게임 시작</button>
+  </div>
+  <div id="day1-page" class="page">
+    <h2>1일차 게임 진행</h2>
+    <div class="circle-container" id="circle-container-day1"></div>
+    <button onclick="goToDay2Page()">2일차로 이동</button>
+    <button onclick="goToPrevFromDay1()">이전</button>
+  </div>
+  <div id="day2-page" class="page">
+    <h2>2일차 게임 진행</h2>
+    <div class="circle-container" id="circle-container-day2"></div>
+    <button onclick="goToDay3Page()">3일차로 이동</button>
+    <button onclick="goToPrevFromDay2()">이전</button>
+  </div>
+  <div id="day3-page" class="page">
+    <h2>3일차 게임 진행</h2>
+    <div class="circle-container" id="circle-container-day3"></div>
+    <button onclick="goToDay4Page()">4일차로 이동</button>
+    <button onclick="goToPrevFromDay3()">이전</button>
+  </div>
+  <div id="day4-page" class="page">
+    <h2>4일차 게임 진행</h2>
+    <div class="circle-container" id="circle-container-day4"></div>
+    <button onclick="goToDay5Page()">5일차로 이동</button>
+    <button onclick="goToPrevFromDay4()">이전</button>
+  </div>
+  <div id="day5-page" class="page">
+    <h2>5일차 게임 진행</h2>
+    <div class="circle-container" id="circle-container-day5"></div>
+    <button onclick="goToPrevFromDay5()">이전</button>
+  </div>
 
-  <label>학생회 인원 수: <input type="number" id="studentCount" value="6"></label><br>
-  <label>위협 인원 수: <input type="number" id="threatCount" value="3"></label><br>
-  <label>이사회 인원 수: <input type="number" id="councilCount" value="2"></label><br><br>
-
-  <button onclick="assignRoles()">역할 분배하기</button>
-
-  <h3>🧾 분배 결과</h3>
-  <ul id="result"></ul>
+  <!-- 팝업 모달 요소 -->
+  <div id="status-modal" style="display:none;position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:9999;background:rgba(0,0,0,0.25);align-items:center;justify-content:center;">
+    <div id="status-modal-inner" style="background:#fff;padding:32px 24px 20px 24px;border-radius:12px;box-shadow:0 4px 32px #0002;min-width:270px;position:relative;">
+      <div style="font-size:1.15em;font-weight:bold;margin-bottom:12px;" id="modal-title"></div>
+      <div>
+        <label><input type="checkbox" id="modal-infected"> 감염</label><br>
+        <label><input type="checkbox" id="modal-interfere"> 방해</label><br>
+        <label><input type="checkbox" id="modal-protect"> 보호</label><br>
+        <label><input type="checkbox" id="modal-stun"> 기절</label>
+      </div>
+      <div style="margin-top:14px;text-align:right;">
+        <button id="modal-save-btn" style="padding:4px 18px;">저장</button>
+        <button onclick="closeStatusModal()" style="padding:4px 14px;">닫기</button>
+      </div>
+    </div>
+  </div>
 
   <script>
-    const allRoles = [
-      { 이름: "학생회장", 세력: "학생회" },
-      { 이름: "전교 1등", 세력: "학생회" },
-      { 이름: "전교 2등", 세력: "학생회" },
-      { 이름: "양호선생님", 세력: "학생회" },
-      { 이름: "교생선생님", 세력: "학생회" },
-      { 이름: "해커", 세력: "학생회" },
-      { 이름: "보안관", 세력: "이사회" },
-      { 이름: "패션왕", 세력: "이사회" },
-      { 이름: "매점 자판기", 세력: "학생회" },
-      { 이름: "백련산 아기곰", 세력: "위협" },
-      { 이름: "불량학생", 세력: "위협" },
-      { 이름: "시백의 오른팔", 세력: "학생회" },
-      { 이름: "방송부", 세력: "학생회" },
-      { 이름: "축구부 주장", 세력: "학생회" },
-      { 이름: "전학생", 세력: "위협" },
-      { 이름: "경비아저씨", 세력: "이사회" },
-      { 이름: "체육부장", 세력: "학생회" },
-      { 이름: "미술선생님", 세력: "이사회" },
-      { 이름: "학생주임", 세력: "학생회" },
-      { 이름: "백련산 도사", 세력: "위협" }
+    let assignedGlobal = [];
+    const characters = [
+      "학생회장", "전교 1등", "전교 2등", "선도부장", "체육부장",
+      "방송부", "축구부 주장", "시백의 왼팔", "시백의 오른팔",
+      "불량학생", "전학생", "교장선생님", "학생주임", "양호선생님",
+      "교생선생님", "미술선생님", "윤리선생님", "사서선생님",
+      "영양사", "경비아저씨", "해커", "보안관", "패션왕",
+      "테크유튜버", "밴드부 보컬", "매점 자판기", "백련산 도사", "백련산 아기곰"
     ];
+    const selectionDiv = document.getElementById("character-selection");
+    characters.forEach(name => {
+      const button = document.createElement("div");
+      button.className = "character-button";
+      button.textContent = name;
+      button.onclick = () => button.classList.toggle("selected");
+      selectionDiv.appendChild(button);
+    });
+    function goToNextPage() {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById("page2").classList.add("active");
+    }
+    function assignRoles() {
+      const selected = Array.from(document.getElementsByClassName("character-button selected"))
+                            .map(btn => btn.textContent);
+      if (selected.length === 0) return alert("등장인물을 선택하세요.");
+      const studentCount = parseInt(document.getElementById("student-count").value);
+      const threatCount = parseInt(document.getElementById("threat-count").value);
+      const councilCount = parseInt(document.getElementById("council-count").value);
+      const antibodyCount = parseInt(document.getElementById("antibody-count").value);
+      const foolCount = parseInt(document.getElementById("fool-count").value);
+      const total = studentCount + threatCount + councilCount;
+      if (selected.length < total) {
+        return alert("선택한 등장인물 수가 소속 인원보다 적습니다.");
+      }
+      const roles = [];
+      for (let i = 0; i < studentCount; i++) roles.push("학생회");
+      for (let i = 0; i < threatCount; i++) roles.push("위협");
+      for (let i = 0; i < councilCount; i++) roles.push("이사회");
+      shuffle(roles);
 
+      const assigned = selected.slice(0, total).map((name, index) => ({
+        name,
+        role: roles[index],
+        antibody: false,
+        fool: false,
+        infected: 0,
+        stun: false,
+        protect: false,
+        interfere: false
+      }));
+      shuffle(assigned);
+      if(typeof assignAntibodyAndFool === "function")
+        assignAntibodyAndFool(assigned, antibodyCount, foolCount);
+      if(typeof assignInitialInfected === "function")
+        assignInitialInfected(assigned, threatCount);
+      assignedGlobal = assigned;
+      showSeatingPage("circle-container-seating", assigned);
+    }
+    function showSeatingPage(containerId, assigned) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById("seating-page").classList.add("active");
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+
+      const count = assigned.length;
+      const radius = 350;
+      const centerX = 450;
+      const centerY = 450;
+
+      assigned.forEach((char, i) => {
+        const angle = (2 * Math.PI * i) / count;
+        const x = centerX + radius * Math.cos(angle) - 50;
+        const y = centerY + radius * Math.sin(angle) - 50;
+
+        const div = document.createElement("div");
+        div.className = "circle-item";
+        div.style.left = `${x}px`;
+        div.style.top = `${y}px`;
+        div.textContent = `${i + 1}번\n${char.name}`;
+        div.dataset.state = "hidden";
+        div.onclick = function () {
+          if (div.dataset.state === "hidden") {
+            div.dataset.state = "revealed";
+            div.textContent = `${i + 1}번\n${char.name}\n(${char.role})`;
+            if (char.role === "학생회") div.classList.add("student");
+            if (char.role === "위협") div.classList.add("threat");
+            if (char.role === "이사회") div.classList.add("council");
+          } else {
+            div.dataset.state = "hidden";
+            div.classList.remove("student", "threat", "council");
+            div.textContent = `${i + 1}번\n${char.name}`;
+          }
+        };
+        container.appendChild(div);
+      });
+    }
     function shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
       }
     }
+    function selectAllCharacters() {
+      document.querySelectorAll(".character-button").forEach(btn => btn.classList.add("selected"));
+    }
+    function goToPrevPage1() {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById("page1").classList.add("active");
+    }
+    function goToPrevPage2() {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById("page2").classList.add("active");
+    }
+    // 아래는 자리배치 이전만 사용
+    function goToPrevFromDay1() {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById("seating-page").classList.add("active");
+      showSeatingPage("circle-container-seating", assignedGlobal);
+    }
+  </script>
 
-    function assignRoles() {
-      const studentCount = parseInt(document.getElementById("studentCount").value);
-      const threatCount = parseInt(document.getElementById("threatCount").value);
-      const councilCount = parseInt(document.getElementById("councilCount").value);
+  <!-- 확장 스크립트: 항체, 바보, 최초 감염자 배정 -->
+  <script>
+    function assignAntibodyAndFool(assigned, antibodyCount, foolCount) {
+      // 항체 전체 랜덤 배정 (중복X)
+      const allIdx = [...Array(assigned.length).keys()];
+      shuffle(allIdx);
+      allIdx.slice(0, antibodyCount).forEach(idx => assigned[idx].antibody = true);
 
-      const totalCount = studentCount + threatCount + councilCount;
+      // 바보귀신: 학생회 소속만 랜덤
+      const studentIdx = assigned.map((c, i) => c.role === "학생회" ? i : -1).filter(idx => idx !== -1);
+      shuffle(studentIdx);
+      studentIdx.slice(0, foolCount).forEach(idx => assigned[idx].fool = true);
+    }
+    function assignInitialInfected(assigned, threatCount) {
+      // 위협/항체 제외한 인덱스 추출
+      const infectableIdx = assigned.map((c,i) =>
+        (!c.antibody && c.role !== "위협" ? i : -1)
+      ).filter(idx => idx !== -1);
+      shuffle(infectableIdx);
+      infectableIdx.slice(0, threatCount).forEach(idx => assigned[idx].infected = "최초");
+    }
+  </script>
 
-      const shuffledRoles = [...allRoles];
-      shuffle(shuffledRoles);
-
-      const resultList = document.getElementById("result");
-      resultList.innerHTML = "";
-
-      const selectedRoles = [];
-
-      // 각 세력별 필요한 수만큼 뽑기
-      let studentPool = shuffledRoles.filter(r => r.세력 === "학생회");
-      let threatPool = shuffledRoles.filter(r => r.세력 === "위협");
-      let councilPool = shuffledRoles.filter(r => r.세력 === "이사회");
-
-      if (studentPool.length < studentCount || threatPool.length < threatCount || councilPool.length < councilCount) {
-        resultList.innerHTML = "<li>⚠️ 인원 수가 부족합니다. 각 세력별 최대 인원 확인해주세요.</li>";
-        return;
+  <!-- 팝업/게임진행페이지용 확장: renderDayCircleStatus -->
+  <script>
+    // 팝업 변수
+    let modalTargetChar = null, modalTargetIdx = null, modalTargetContainerId = null;
+    function openStatusModal(char, idx, containerId) {
+      modalTargetChar = char;
+      modalTargetIdx = idx;
+      modalTargetContainerId = containerId;
+      document.getElementById('modal-title').innerText = `${idx+1}번 ${char.name} 상태 설정`;
+      document.getElementById('modal-infected').checked = !!char.infected;
+      document.getElementById('modal-interfere').checked = !!char.interfere;
+      document.getElementById('modal-protect').checked = !!char.protect;
+      document.getElementById('modal-stun').checked = !!char.stun;
+      document.getElementById('status-modal').style.display = "flex";
+    }
+    function closeStatusModal() {
+      document.getElementById('status-modal').style.display = "none";
+      modalTargetChar = null;
+      modalTargetIdx = null;
+      modalTargetContainerId = null;
+    }
+    document.getElementById('modal-save-btn').onclick = function() {
+      if(!modalTargetChar) return;
+      if(document.getElementById('modal-infected').checked) {
+        if(!modalTargetChar.infected) modalTargetChar.infected = "1일";
+      } else {
+        modalTargetChar.infected = 0;
       }
+      modalTargetChar.interfere = document.getElementById('modal-interfere').checked;
+      modalTargetChar.protect = document.getElementById('modal-protect').checked;
+      modalTargetChar.stun = document.getElementById('modal-stun').checked;
+      renderDayCircleStatus(modalTargetContainerId, assignedGlobal);
+      closeStatusModal();
+    }
 
-      shuffle(studentPool);
-      shuffle(threatPool);
-      shuffle(councilPool);
+    // renderDayCircleStatus (게임진행 페이지에서만)
+    function renderDayCircleStatus(containerId, states) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+      const count = states.length;
+      const radius = 350;
+      const centerX = 450, centerY = 450;
+      states.forEach((char, i) => {
+        const angle = (2 * Math.PI * i) / count;
+        const x = centerX + radius * Math.cos(angle) - 50;
+        const y = centerY + radius * Math.sin(angle) - 50;
+        const div = document.createElement("div");
+        div.className = "circle-item";
+        div.style.left = `${x}px`;
+        div.style.top = `${y}px`;
 
-      selectedRoles.push(...studentPool.slice(0, studentCount));
-      selectedRoles.push(...threatPool.slice(0, threatCount));
-      selectedRoles.push(...councilPool.slice(0, councilCount));
+        if(char.role === "위협") div.classList.add("threat-border");
+        if(char.role === "이사회") div.classList.add("council-border");
+        if(char.fool) div.classList.add("fool-border");
+        if(char.antibody) div.classList.add("antibody-face");
+        if(char.infected && char.infected !== 0) {
+          div.classList.add("infected-face");
+          let label = "감염";
+          if(char.infected === "최초") label = "최초";
+          else if(typeof char.infected === "number" || (typeof char.infected === "string" && char.infected.endsWith("일"))) label = char.infected;
+          const span = document.createElement("span");
+          span.className = "infect-label";
+          span.textContent = label;
+          div.appendChild(span);
+        }
+        if(char.interfere) div.classList.add("interfere-bg");
+        if(char.protect) div.classList.add("protect-shield");
+        if(char.stun) div.classList.add("stun-x");
 
-      shuffle(selectedRoles);
-
-      selectedRoles.forEach((role, index) => {
-        const li = document.createElement("li");
-        li.textContent = `${index + 1}번 자리 → ${role.이름} (${role.세력})`;
-        resultList.appendChild(li);
+        div.textContent = `${i+1}번\n${char.name}`;
+        div.onclick = function() { openStatusModal(char, i, containerId); };
+        container.appendChild(div);
       });
+    }
+
+    // 게임진행 페이지 이동시마다 renderDayCircleStatus만 사용하도록 덮어쓰기
+    startGame = function() {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById("day1-page").classList.add("active");
+      renderDayCircleStatus("circle-container-day1", assignedGlobal);
+    }
+    goToDay2Page = function() {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById("day2-page").classList.add("active");
+      renderDayCircleStatus("circle-container-day2", assignedGlobal);
+    }
+    goToDay3Page = function() {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById("day3-page").classList.add("active");
+      renderDayCircleStatus("circle-container-day3", assignedGlobal);
+    }
+    goToDay4Page = function() {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById("day4-page").classList.add("active");
+      renderDayCircleStatus("circle-container-day4", assignedGlobal);
+    }
+    goToDay5Page = function() {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById("day5-page").classList.add("active");
+      renderDayCircleStatus("circle-container-day5", assignedGlobal);
+    }
+    goToPrevFromDay2 = function() {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById("day1-page").classList.add("active");
+      renderDayCircleStatus("circle-container-day1", assignedGlobal);
+    }
+    goToPrevFromDay3 = function() {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById("day2-page").classList.add("active");
+      renderDayCircleStatus("circle-container-day2", assignedGlobal);
+    }
+    goToPrevFromDay4 = function() {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById("day3-page").classList.add("active");
+      renderDayCircleStatus("circle-container-day3", assignedGlobal);
+    }
+    goToPrevFromDay5 = function() {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById("day4-page").classList.add("active");
+      renderDayCircleStatus("circle-container-day4", assignedGlobal);
     }
   </script>
 </body>
 </html>
+<script>
+// --- 상태 입력 임시저장 (오늘 입력 → 내일 효과)
+if(!window._nextDayStatus) window._nextDayStatus = {}; // { '1': [{interfere:true, protect:false, stun:true}, ...], ... }
+
+// 팝업 저장 버튼 덮어쓰기: 오늘 체크한 것은 내일만 반영!
+document.getElementById('modal-save-btn').onclick = function() {
+  if(!modalTargetChar) return;
+  // 현재 페이지(dayN-page)에서 N 추출
+  let currDay = 1;
+  for(let d=1; d<=5; d++) {
+    if(document.getElementById(`day${d}-page`)?.classList.contains('active')) {
+      currDay = d;
+      break;
+    }
+  }
+  // _nextDayStatus의 내일 배열 준비
+  if(!_nextDayStatus[currDay+1]) _nextDayStatus[currDay+1] = [];
+  let arr = _nextDayStatus[currDay+1];
+  // 캐릭터 인덱스 맞게 배열 사이즈 맞추기
+  while(arr.length < assignedGlobal.length) arr.push({});
+  // 오늘 체크한 값을 내일로 미룬다
+  arr[modalTargetIdx] = {
+    interfere: document.getElementById('modal-interfere').checked,
+    protect: document.getElementById('modal-protect').checked,
+    stun: document.getElementById('modal-stun').checked,
+  };
+  // 감염(즉시)만 실시간 반영, 나머지는 내일만 반영
+  if(document.getElementById('modal-infected').checked) {
+    if(!modalTargetChar.infected) modalTargetChar.infected = `${currDay}일`;
+  } else {
+    modalTargetChar.infected = 0;
+  }
+  renderDayCircleStatus(modalTargetContainerId, assignedGlobal, currDay);
+  closeStatusModal();
+}
+
+// renderDayCircleStatus 함수 확장: 현재 날짜 기준으로 방해/보호/기절만 표시
+const _prev_renderDayCircleStatus = renderDayCircleStatus;
+renderDayCircleStatus = function(containerId, states, currDay=1) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = "";
+  const count = states.length;
+  const radius = 350;
+  const centerX = 450, centerY = 450;
+  // "내일" 효과를 적용할 일차
+  let statusArr = _nextDayStatus[currDay] || [];
+  states.forEach((char, i) => {
+    const angle = (2 * Math.PI * i) / count;
+    const x = centerX + radius * Math.cos(angle) - 50;
+    const y = centerY + radius * Math.sin(angle) - 50;
+    const div = document.createElement("div");
+    div.className = "circle-item";
+    div.style.left = `${x}px`;
+    div.style.top = `${y}px`;
+
+    // 기존 상태: 위협/이사회/바보/항체/감염
+    if(char.role === "위협") div.classList.add("threat-border");
+    if(char.role === "이사회") div.classList.add("council-border");
+    if(char.fool) div.classList.add("fool-border");
+    if(char.antibody) div.classList.add("antibody-face");
+    if(char.infected && char.infected !== 0) {
+      div.classList.add("infected-face");
+      let label = "감염";
+      if(char.infected === "최초") label = "최초";
+      else if(typeof char.infected === "number" || (typeof char.infected === "string" && char.infected.endsWith("일"))) label = char.infected;
+      const span = document.createElement("span");
+      span.className = "infect-label";
+      span.textContent = label;
+      div.appendChild(span);
+    }
+    // 방해/보호/기절: 오늘 입력한 값은 내일에만! (오늘은 statusArr 사용)
+    let st = statusArr[i] || {};
+    if(st.interfere) div.classList.add("interfere-bg");
+    if(st.protect) div.classList.add("protect-shield");
+    if(st.stun) div.classList.add("stun-x");
+
+    div.textContent = `${i+1}번\n${char.name}`;
+    div.onclick = function() { openStatusModal(char, i, containerId); };
+    container.appendChild(div);
+  });
+}
+
+// 각 일차 이동 함수도 dayN값 넘겨서 확장된 render 사용
+startGame = function() {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById("day1-page").classList.add("active");
+  renderDayCircleStatus("circle-container-day1", assignedGlobal, 1);
+}
+goToDay2Page = function() {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById("day2-page").classList.add("active");
+  renderDayCircleStatus("circle-container-day2", assignedGlobal, 2);
+}
+goToDay3Page = function() {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById("day3-page").classList.add("active");
+  renderDayCircleStatus("circle-container-day3", assignedGlobal, 3);
+}
+goToDay4Page = function() {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById("day4-page").classList.add("active");
+  renderDayCircleStatus("circle-container-day4", assignedGlobal, 4);
+}
+goToDay5Page = function() {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById("day5-page").classList.add("active");
+  renderDayCircleStatus("circle-container-day5", assignedGlobal, 5);
+}
+goToPrevFromDay2 = function() {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById("day1-page").classList.add("active");
+  renderDayCircleStatus("circle-container-day1", assignedGlobal, 1);
+}
+goToPrevFromDay3 = function() {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById("day2-page").classList.add("active");
+  renderDayCircleStatus("circle-container-day2", assignedGlobal, 2);
+}
+goToPrevFromDay4 = function() {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById("day3-page").classList.add("active");
+  renderDayCircleStatus("circle-container-day3", assignedGlobal, 3);
+}
+goToPrevFromDay5 = function() {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById("day4-page").classList.add("active");
+  renderDayCircleStatus("circle-container-day4", assignedGlobal, 4);
+}
+</script>
